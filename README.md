@@ -52,7 +52,14 @@ from einops import rearrange, reduce, repeat
 from einops.layers.torch import Rearrange, Reduce
 from torchsummary import summary
 
+import urllib.request
+from PIL import Image
+
 ```
+
+이미지 : 
+
+![cat](cat.jpg)
 
 ## Data
 
@@ -62,11 +69,6 @@ img = Image.open('./cat.jpg')
 fig = plt.figure()
 plt.imshow(img)
 ```
-이미지 주소 : https://github.com/FrancescoSaverioZuppichini/ViT/raw/main/images/output_5_1.png?raw=true
-![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/output_5_1.png?raw=true)
-
-Then, we need to preprocess it
-
 
 ```python
 # resize to imagenet size 

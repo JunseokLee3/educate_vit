@@ -1,31 +1,28 @@
 # Implementing Vi(sual)T(transformer) in PyTorch
 
-Hi guys, happy new year! Today we are going to implement the famous **Vi**(sual)**T**(transformer) proposed in [AN IMAGE IS WORTH 16X16 WORDS:
+paper : [AN IMAGE IS WORTH 16X16 WORDS:
 TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pdf).
 
 
-Code is here, an interactive version of this article can be downloaded from [here](https://github.com/FrancescoSaverioZuppichini/ViT).
+**코드 참조 및 글 참조[here](https://github.com/FrancescoSaverioZuppichini/ViT)**
 
-ViT will be soon available on my **new computer vision library called [glasses](https://github.com/FrancescoSaverioZuppichini/glasses)**
+이 코드 vision transformerd을 공부하기 위한 코드이며, 최적화 되어 있지 않습니다.
 
-This is a technical tutorial, not your normal medium post where you find out about the top 5 secret pandas functions to make you rich. 
+시작하기 전에 다음을 수행할 것을 강력히 권장합니다.:
 
-So, before beginning, I highly recommend you to:
-
-- have a look at the amazing [The Illustrated Transformer
+- 트랜스포머 설명 [The Illustrated Transformer
 ](https://jalammar.github.io/illustrated-transformer/) website
 - watch [Yannic Kilcher video about ViT](https://www.youtube.com/watch?v=TrdevFK_am4&t=1000s)
-- read [Einops](https://github.com/arogozhnikov/einops/) doc
+- 라이브러리 [Einops](https://github.com/arogozhnikov/einops/) doc
 
-So, ViT uses a normal transformer (the one proposed in [Attention is All You Need](https://arxiv.org/abs/1706.03762)) that works on images. But, how?
 
-The following picture shows ViT's architecture
+다음 그림은 ViT의 아키텍처를 보여 줌.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/ViT.png?raw=true)
 
-The input image is decomposed into 16x16 flatten patches (the image is not in scale). Then they are embedded using a normal fully connected layer, a special `cls` token is added in front of them and the `positional encoding` is summed. The resulting tensor is passed first into a standard Transformer and then to a classification head. That's it. 
+입력 이미지가 16x16 플랫 패치로 분해된다.(이미지 크기가 조정되지 않음). 그런 다음 완전히 연결된 일반 레이어를 사용하여 삽입하고 앞에 특별한 'cls' 토큰이 추가되고 '위치 인코딩'이 더해진다. 과 텐서는 먼저 표준 트랜스포머로 전달된 다음 분류 헤드로 전달된다.
 
-The article is structure into the following sections:
+이 문서는 다음 섹션으로 구성되어 있습니다:
 
 - Data
 - Patches Embeddings
@@ -39,7 +36,7 @@ The article is structure into the following sections:
 - Head
 - ViT
 
-We are going to implement the model block by block with a bottom-up approach. We can start by importing all the required packages
+우리는 bottom-up 접근 방식으로 모델을 블록별로 구현할 것이다. 필요한 모든 패키지를 가져오는 것으로 시작할 수 있습니다.
 
 
 ```python
@@ -57,12 +54,7 @@ from torchsummary import summary
 
 ```
 
-Nothing fancy here, just PyTorch + stuff
-
 ## Data
-
-First of all, we need a picture, a cute cat works just fine :)
-
 
 ```python
 img = Image.open('./cat.jpg')
@@ -70,7 +62,7 @@ img = Image.open('./cat.jpg')
 fig = plt.figure()
 plt.imshow(img)
 ```
-
+이미지 주소 : https://github.com/FrancescoSaverioZuppichini/ViT/raw/main/images/output_5_1.png?raw=true
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/output_5_1.png?raw=true)
 
 Then, we need to preprocess it

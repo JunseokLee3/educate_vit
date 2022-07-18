@@ -6,9 +6,9 @@ TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pd
 
 **코드 참조 및 글 참조[here](https://github.com/FrancescoSaverioZuppichini/ViT)**
 
-이 코드 vision transformerd을 공부하기 위한 코드이며, 최적화 되어 있지 않습니다.
+이 코드 vision transformerd을 공부하기 위한 코드이며, 최적화 되어 있지 않음.
 
-시작하기 전에 다음을 수행할 것을 강력히 권장합니다.:
+시작하기 전에 다음을 수행할 것을 강력히 권장:
 
 - 트랜스포머 설명 [The Illustrated Transformer
 ](https://jalammar.github.io/illustrated-transformer/) website
@@ -36,7 +36,7 @@ TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pd
 - Head
 - ViT
 
-우리는 bottom-up 접근 방식으로 모델을 블록별로 구현할 것이다. 필요한 모든 패키지를 가져오는 것으로 시작할 수 있습니다.
+우리는 bottom-up 접근 방식으로 모델을 블록별로 구현할 것이다. 필요한 모든 패키지를 가져오는 것으로 시작할 수 있음.
 
 
 ```python
@@ -69,6 +69,25 @@ img = Image.open('./cat.jpg')
 fig = plt.figure()
 plt.imshow(img)
 ```
+```py
+# This is NOT a part of the pipeline.
+# Actually the image is divided into patch embeddings by Conv2d 
+# with stride=(16, 16) shown above.
+fig = plt.figure(figsize=(8, 8))
+fig.suptitle("Visualization of Patches", fontsize=24)
+fig.add_axes()
+img = np.asarray(img)
+for i in range(0, 196):
+    x = i % 14
+    y = i // 14
+    patch = img[y*16:(y+1)*16, x*16:(x+1)*16]
+    ax = fig.add_subplot(14, 14, i+1)
+    ax.axes.get_xaxis().set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+    ax.imshow(patch)
+
+```
+
 
 ```python
 # resize to imagenet size 
@@ -87,7 +106,7 @@ x.shape
 
 ## Patches Embeddings
 
-The first step is to break-down the image in multiple patches and flatten them.
+첫 번째 단계는 이미지를 여러 패치로 분해하여 평평하게 만드는 것.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/Patches.png?raw=true)
 
@@ -95,20 +114,17 @@ Quoting from the paper:
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/paper1.png?raw=true)
 
-
-This can be easily done using einops. 
-
+이것은 `einops`를 사용하면 쉽게 할 수 있다.
 
 ```python
 patch_size = 16 # 16 pixels
 pathes = rearrange(x, 'b c (h s1) (w s2) -> b (h w) (s1 s2 c)', s1=patch_size, s2=patch_size)
 ```
 
-Now, we need to project them using a normal linear layer
+이제 일반 선형 레이어를 사용하여 투영해야 합니다.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/PatchesProjected.png?raw=true)
 
-We can create a `PatchEmbedding` class to keep our code nice and clean
 
 
 ```python
@@ -136,7 +152,7 @@ PatchEmbedding()(x).shape
 
 
 
-**Note** After checking out the original implementation, I found out that the authors are using a Conv2d layer instead of a Linear one for performance gain. This is obtained by using a kernel_size and stride equal to the `patch_size`.  Intuitively, the convolution operation is applied to each patch individually. So, we have to first apply the conv layer and then flat the resulting images.
+**참고** 원본 구현을 확인한 후, 저자들이 성능 향상을 위해 Linear 계층 대신 Conv2d 계층을 사용하고 있다는 것을 알게 됨. 이는 kernel_size를 사용하고 'patch_size'와 동일한 보폭을 사용함으로써 얻을 수 있음. 직관적으로 컨볼루션 작업은 각 패치에 개별적으로 적용됩니다. 따라서, 우리는 먼저 컨볼루션 레이어를 적용한 후 결과 이미지를 평탄화해야 함.
 
 
 ```python
@@ -166,7 +182,7 @@ PatchEmbedding()(x).shape
 
 ### CLS Token
 
-Next step is to add the `cls token` and the position embedding. The `cls token` is just a number placed in from of **each** sequence (of projected patches)
+다음 단계는 `cls 토큰`과 위치 임베딩을 추가하는 것입니다. `cls 토큰`은 **각** 시퀀스(프로젝션된 패치)에서 삽입된 숫자일 뿐.
 
 
 ```python
@@ -200,13 +216,11 @@ PatchEmbedding()(x).shape
 
 
 
-`cls_token` is a torch Parameter randomly initialized, in the forward the method it is copied `b` (batch) times and prepended before the projected patches using `torch.cat`
+`cls_token`은 무작위로 초기화되는 토치 매개변수이며, 앞으로 `b`(배치)번 복사되고 `torch.cat`을 사용하여 투영된 패치 앞에 추가됩니다.
 
 ### Position Embedding
 
-So far, the model has no idea about the original position of the patches. We need to pass this spatial information. This can be done in different ways, in ViT we let the model learn it. The position embedding is just a tensor of shape `N_PATCHES + 1 (token), EMBED_SIZE` that is added to the projected patches.
-
-![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/PatchesPositionEmbedding.png?raw=true)
+지금까지 모델은 패치의 원래 위치에 대해 알지 못했습니다. 이 공간 정보를 전달해야 합니다. 이것은 다양한 방법으로 수행할 수 있습니다. ViT에서는 모델이 학습하도록 합니다. 위치 임베딩은 투영된 패치에 추가되는 'N_PATCHES + 1(토큰), EMBED_SIZE' 모양의 텐서일 뿐.
 
 
 ```python
@@ -238,16 +252,15 @@ PatchEmbedding()(x).shape
 
 
 
-
     torch.Size([1, 197, 768])
 
 
 
-We added the position embedding in the `.positions` field and sum it to the patches in the `.forward` function
+`.positions` 필드에 위치 임베딩을 추가하고 `.forward` 함수의 패치에 합산.
 
 ## Transformer
 
-Now we need the implement Transformer. In ViT only the Encoder is used, the architecture is visualized in the following picture.
+이제 Transformer 구현이 필요. ViT에서는 Encoder만 사용하며 아키텍처는 다음 그림과 같이 시각화.
 
 <img src="https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlock.png?raw=true" alt="drawing" width="200"/>
 
@@ -255,12 +268,11 @@ Let's start with the Attention part
 
 ### Attention
 
-So, the attention takes three inputs, the famous queries, keys, and values, and computes the attention matrix using queries and values and use it to "attend" to the values. In this case, we are using multi-head attention meaning that the computation is split across n heads with smaller input size.
+따라서 Attention은 쿼리, 키 및 값의 세 가지 입력을 취하고 쿼리와 값을 사용하여 Attention 매트릭스를 계산. Value에 "attend"하는 데 사용. 이 경우, 우리는 계산이 더 작은 입력 크기를 가진 n개의 헤드로 분할된다는 것을 의미하는 다중 헤드 주의를 사용하고 있습니다.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttention.png?raw=true)
 
-We can use `nn.MultiHadAttention` from PyTorch or implement our own. For completeness I will show how it looks like:
-
+PyTorch의 `nn.MultiHadAttention`을 사용하거나 자체적으로 구현할 수 있음. 완성도를 위해 다음과 같이 표시:
 
 ```python
 class MultiHeadAttention(nn.Module):
@@ -304,17 +316,15 @@ MultiHeadAttention()(patches_embedded).shape
     torch.Size([1, 197, 768])
 
 
+4개의 완전히 연결된 계층이 있습니다. 하나는 쿼리, 키, 값용이고 마지막 하나는 드롭아웃입니다.
 
-So, step by step. We have 4 fully connected layers, one for queries, keys, values, and a final one dropout.
+아이디어는 쿼리와 키 사이에 곱을 사용하여 각 요소가 나머지와 함께 중요한 순서인 "얼마나"인지 아는 것입니다. 그런 다음 이 정보를 사용하여 값을 조정합니다.
 
-Okay, the idea (really go and read [The Illustrated Transformer
-](https://jalammar.github.io/illustrated-transformer/)) is to use the product between the queries and the keys to knowing "how much" each element is the sequence in important with the rest. Then, we use this information to scale the values.
+`forward` 방법은 이전 레이어의 쿼리, 키 및 값을 입력으로 받아 3개의 선형 레이어를 사용하여 투영. 다중 헤드 어텐션을 구현하기 때문에 결과를 다중 헤드로 재정렬 해야 함.
 
-The `forward` method takes as input the queries, keys, and values from the previous layer and projects them using the three linear layers. Since we implementing multi heads attention, we have to rearrange the result in multiple heads. 
+이것은 einops에서 `rearrange`를 사용하여 수행.
 
-This is done by using `rearrange` from einops. 
-
-*Queries, Keys and Values* are always the same, so for simplicity, I have only one input (`x`). 
+* 쿼리, 키 및 값 *은 항상 동일하므로 단순화를 위해 하나의 입력만 있습니다. 
 
 ```python
 queries = rearrange(self.queries(x), "b n (h d) -> b h n d", h=self.n_heads)
@@ -322,7 +332,7 @@ keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.n_heads)
 values  = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.n_heads)
 ```
 
-The resulting keys, queries, and values have a shape of `BATCH, HEADS, SEQUENCE_LEN, EMBEDDING_SIZE`.
+결과 키, 쿼리 및 값의 모양은 `BATCH, HEADS, SEQUENCE_LEN EMBEDDING_SIZE` 입니다.
 
 To compute the attention matrix we first have to perform matrix multiplication between queries and keys, a.k.a sum up over the last axis. This can be easily done using `torch.einsum`
 
@@ -330,17 +340,18 @@ To compute the attention matrix we first have to perform matrix multiplication b
 energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys
 ```
 
-The resulting vector has the shape `BATCH, HEADS, QUERY_LEN, KEY_LEN`. Then the attention is finally the softmax of the resulting vector divided by a scaling factor based on the size of the embedding. 
+결과 벡터는 `BATCH, HEADS, QUERY_LEN, KEY_LEN` 형태를 갖음. 그런 다음 마지막으로 attention은 임베딩의 크기에 기초한 스케일링 계수로 나눈 결과 벡터의 소프트맥스이다.
 
-Lastly, we use the attention to scale the values
+
+마지막으로, attention을 사용하여 Value을 조정 함.
 
 ```python
 torch.einsum('bhal, bhlv -> bhav ', att, values)
 ```
 
-and we obtain a vector of size `BATCH HEADS VALUES_LEN, EMBEDDING_SIZE`. We concat the heads together and we finally return the results
+ 우리는 'Batch HEADS VALUES_LEN, IMBLING_SIZE' 크기의 벡터를 얻음. 우리는 Head를 concat하고 마침내 결과를 반환 함.
 
-**Note** we can use a single matrix to compute in one shot `queries, keys and values`. 
+**Note** 단일 행렬을 사용하여 `queries, kesys 및 values`을 한 번에 계산할 수 있습니다.. 
 
 
 ```python

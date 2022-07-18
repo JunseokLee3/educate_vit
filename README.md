@@ -40,6 +40,9 @@ TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pd
 
 
 ```python
+!pip install torchsummary
+!pip install einops
+
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -64,28 +67,10 @@ from PIL import Image
 ## Data
 
 ```python
-img = Image.open('./cat.jpg')
+img = Image.open('./cat.jpg').convert('RGB')
 
 fig = plt.figure()
 plt.imshow(img)
-```
-```py
-# This is NOT a part of the pipeline.
-# Actually the image is divided into patch embeddings by Conv2d 
-# with stride=(16, 16) shown above.
-fig = plt.figure(figsize=(8, 8))
-fig.suptitle("Visualization of Patches", fontsize=24)
-fig.add_axes()
-img = np.asarray(img)
-for i in range(0, 196):
-    x = i % 14
-    y = i // 14
-    patch = img[y*16:(y+1)*16, x*16:(x+1)*16]
-    ax = fig.add_subplot(14, 14, i+1)
-    ax.axes.get_xaxis().set_visible(False)
-    ax.axes.get_yaxis().set_visible(False)
-    ax.imshow(patch)
-
 ```
 
 
@@ -397,11 +382,9 @@ MultiHeadAttention()(patches_embedded).shape
 
 ### Residuals
 
-The transformer block has residuals connection
+변압기 블록에 잔차 연결부가 있음
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttentionRes.png?raw=true)
-
-We can create a nice wrapper to perform the residual addition, it will be handy later on
 
 
 ```python
@@ -419,7 +402,7 @@ class ResidualAdd(nn.Module):
 
 ## MLP
 
-The attention's output is passed to a fully connected layer composed of two layers that upsample by a factor of `expansion` the input
+주의의 출력은 입력을 `확장`하는 요인으로 업샘플링하는 두 개의 레이어로 구성된 완전히 연결된 레이어로 전달 됨.
 
 <img src="https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttentionZoom.png?raw=true" alt="drawing" width="200"/>
 
@@ -436,13 +419,12 @@ class FeedForwardBlock(nn.Sequential):
         )
 ```
 
-Just a quick side note. I don't know why but I've never seen people subclassing `nn.Sequential` to avoid writing the `forward` method. Start doing it, this is how object programming works!
-
 **Finally**, we can create the Transformer Encoder Block
+
 <img src="https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlock.png?raw=true" alt="drawing" width="200"/>
 
 
-`ResidualAdd` allows us to define this block in an elegant way
+`ResidualAdd`를 사용하면 이 블록을 정의할 수 있습니다.
 
 
 ```python
@@ -483,12 +465,11 @@ TransformerEncoderBlock()(patches_embedded).shape
 
 
 
-you can also PyTorch build-in multi-head attention but it will expect 3 inputs: queries, keys, and values. You can subclass it and pass the same input
+PyTorch에서 멀티 헤드 어텐션을 빌드할 수도 있지만 쿼리, 키 및 값의 3가지 입력이 필요. 그것을 하위 분류하고 동일한 입력을 전달할 수 있음.
 
 ### Transformer
 
-In ViT only the Encoder part of the original transformer is used. Easily, the encoder is `L` blocks of `TransformerBlock`.
-
+ViT에서는 원래 Transformer의 인코더 부분만 사용.
 
 
 ```python
@@ -498,13 +479,9 @@ class TransformerEncoder(nn.Sequential):
                 
 ```
 
-Easy peasy!
-
 ## Head
 
-The last layer is a normal fully connect that gives the class probability. It first performs a basic mean over the whole sequence.
-
-![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/ClassificationHead.png?raw=true)
+마지막 계층은 클래스 확률을 제공하는 일반 완전 연결임. 먼저 전체 시퀀스에 대해 기본 평균을 수행 함.
 
 
 ```python
@@ -518,7 +495,7 @@ class ClassificationHead(nn.Sequential):
 
 ## Vi(sual) T(rasnformer)
 
-We can compose `PatchEmbedding`, `TransformerEncoder` and  `ClassificationHead` to create the final ViT architecture.
+우리는 최종 ViT 아키텍처를 생성하기 위해 `PatchEmbedding`, `TransformerEncoder` 및 `ClassificationHead`를 구성 함.
 
 
 ```python
@@ -539,7 +516,7 @@ class ViT(nn.Sequential):
         
 ```
 
-We can use `torchsummary` to check the number of parameters
+매개변수의 수를 확인하기 위해 `torchsummary`를 사용할 수 있음.
 
 
 ```python
@@ -758,14 +735,4 @@ Estimated Total Size (MB): 694.56
 ---------------------------------------------------------------
 ```
 
-I checked the parameters with other implementations and they are the same!
-
-# Conclusions
-
-In this article, we have seen how to implement ViT in a nice, scalable, and customizable way. I hope it was useful.
-
 By the way, I am working on a **new computer vision library called [glasses](https://github.com/FrancescoSaverioZuppichini/glasses), check it out if you like**
-
-Take care :)
-
-Francesco

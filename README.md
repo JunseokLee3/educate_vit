@@ -40,9 +40,6 @@ TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pd
 
 
 ```python
-!pip install torchsummary
-!pip install einops
-
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -67,10 +64,11 @@ from PIL import Image
 ## Data
 
 ```python
-img = Image.open('./cat.jpg').convert('RGB')
-
-fig = plt.figure()
-plt.imshow(img)
+transform = Compose([Resize((224, 224)), ToTensor()])
+x = transform(img)
+print('image.size :',x.shape)
+x = x.unsqueeze(0) # add batch dim
+print('after unsqueeze(0) :',x.shape)
 ```
 
 
@@ -84,8 +82,8 @@ x.shape
 
 
 
-
-    torch.Size([1, 3, 224, 224])
+    image.size : torch.Size([3, 224, 224])
+    after unsqueeze(0) : torch.Size([1, 3, 224, 224])
 
 
 
@@ -98,6 +96,8 @@ x.shape
 Quoting from the paper:
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/paper1.png?raw=true)
+
+2D 이미지를 처리하기 위해 이미지 $\mathsf x \in \mathbb R^{H \times W \times C}$를 평평한 2D 패치 $\mathsf x_p \in \mathbb R^{N \times (P^2 \cdot C)}$ 시퀀스로 재구성한다. 여기서 $(H, W)$는 원본 이미지의 해상도, $C$는 채널 수, $(P, P)$는 각 이미지 패치의 해상도, $N=HW/P^2$은 결과 패치 수이다.
 
 이것은 `einops`를 사용하면 쉽게 할 수 있다.
 
@@ -130,14 +130,11 @@ class PatchEmbedding(nn.Module):
 PatchEmbedding()(x).shape
 ```
 
-
-
-
     torch.Size([1, 196, 768])
 
 
 
-**참고** 원본 구현을 확인한 후, 저자들이 성능 향상을 위해 Linear 계층 대신 Conv2d 계층을 사용하고 있다는 것을 알게 됨. 이는 kernel_size를 사용하고 'patch_size'와 동일한 보폭을 사용함으로써 얻을 수 있음. 직관적으로 컨볼루션 작업은 각 패치에 개별적으로 적용됩니다. 따라서, 우리는 먼저 컨볼루션 레이어를 적용한 후 결과 이미지를 평탄화해야 함.
+**참고** ***원본 구현을 확인한 후, 저자들이 성능 향상을 위해 Linear 계층 대신 Conv2d 계층을 사용하고 있다는 것을 알게 됨.*** 이는 kernel_size를 사용하고 patch_size와 동일한 보폭을 사용함으로써 얻을 수 있고 직관적으로 컨볼루션 작업은 각 패치에 개별적으로 적용됨. 따라서, 우리는 먼저 컨볼루션 레이어를 적용한 후 결과 이미지를 평탄화해야 함.
 
 
 ```python
@@ -155,12 +152,12 @@ class PatchEmbedding(nn.Module):
         x = self.projection(x)
         return x
     
+a_k=nn.Conv2d(3, 768, kernel_size=patch_size, stride=patch_size)(x)
+print('커널 들어 간 후 shape : ',a_k.shape)    
 PatchEmbedding()(x).shape
 ```
 
-
-
-
+    커널 들어 간 후 shape :  torch.Size([1, 768, 14, 14])
     torch.Size([1, 196, 768])
 
 

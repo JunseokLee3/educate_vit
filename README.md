@@ -202,7 +202,7 @@ PatchEmbedding()(x).shape
 
 ### Position Embedding
 
-지금까지 모델은 패치의 원래 위치에 대해 알지 못했습니다. 이 공간 정보를 전달해야 합니다. 이것은 다양한 방법으로 수행할 수 있습니다. ViT에서는 모델이 학습하도록 합니다. 위치 임베딩은 투영된 패치에 추가되는 'N_PATCHES + 1(토큰), EMBED_SIZE' 모양의 텐서일 뿐.
+지금까지 모델은 패치의 원래 위치에 대해 알지 못했습니다. 이 공간 정보를 전달해야 합니다. 이것은 다양한 방법으로 수행할 수 있습니다. ViT에서는 모델이 학습하도록 합니다. 위치 임베딩은 투영된 패치에 추가되는 N_PATCHES + 1(토큰), EMBED_SIZE 모양의 텐서일 뿐.
 
 
 ```python
@@ -250,7 +250,7 @@ Let's start with the Attention part
 
 ### Attention
 
-따라서 Attention은 쿼리, 키 및 값의 세 가지 입력을 취하고 쿼리와 값을 사용하여 Attention 매트릭스를 계산. Value에 "attend"하는 데 사용. 이 경우, 우리는 계산이 더 작은 입력 크기를 가진 n개의 헤드로 분할된다는 것을 의미하는 다중 헤드 주의를 사용하고 있습니다.
+따라서 Attention은 쿼리, 키 및 값의 세 가지 입력을 취하고 쿼리와 값을 사용하여 Attention 매트릭스를 계산. Value에 "attend"하는 데 사용. 이 경우, 우리는 계산이 더 작은 입력 크기를 가진 n개의 헤드로 분할된다는 것을 의미하는 다중 헤드 attention을 사용하고 있다.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttention.png?raw=true)
 
@@ -306,7 +306,7 @@ MultiHeadAttention()(patches_embedded).shape
 
 이것은 einops에서 `rearrange`를 사용하여 수행.
 
-* 쿼리, 키 및 값 *은 항상 동일하므로 단순화를 위해 하나의 입력만 있습니다. 
+* 쿼리, 키 및 값은 항상 동일하므로 단순화를 위해 하나의 입력만 있습니다. 
 
 ```python
 queries = rearrange(self.queries(x), "b n (h d) -> b h n d", h=self.n_heads)
@@ -314,15 +314,15 @@ keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.n_heads)
 values  = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.n_heads)
 ```
 
-결과 키, 쿼리 및 값의 모양은 `BATCH, HEADS, SEQUENCE_LEN EMBEDDING_SIZE` 입니다.
+결과 키, 쿼리 및 값의 모양은 `BATCH, HEADS, SEQUENCE_LEN EMBEDDING_SIZE` 이다.
 
-To compute the attention matrix we first have to perform matrix multiplication between queries and keys, a.k.a sum up over the last axis. This can be easily done using `torch.einsum`
+attention 행렬을 계산하려면 먼저 쿼리와 키 사이의 행렬 곱셈(마지막 축에 대한 합)을 수행해야 한다. 이 작업은 `torch.einsum`을 사용하여 쉽게 수행할 수 있음.
 
 ```python
 energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys
 ```
 
-결과 벡터는 `BATCH, HEADS, QUERY_LEN, KEY_LEN` 형태를 갖음. 그런 다음 마지막으로 attention은 임베딩의 크기에 기초한 스케일링 계수로 나눈 결과 벡터의 소프트맥스이다.
+결과 벡터는 `BATCH, HEADS, QUERY_LEN, KEY_LEN` 형태를 갖음. 그런 다음 마지막으로 attention은 임베딩의 크기에 기초한 스케일링 계수로 나눈 결과 벡터의 소프트맥스 이다.
 
 
 마지막으로, attention을 사용하여 Value을 조정 함.
@@ -331,9 +331,7 @@ energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys
 torch.einsum('bhal, bhlv -> bhav ', att, values)
 ```
 
- 우리는 'Batch HEADS VALUES_LEN, IMBLING_SIZE' 크기의 벡터를 얻음. 우리는 Head를 concat하고 마침내 결과를 반환 함.
-
-**Note** 단일 행렬을 사용하여 `queries, kesys 및 values`을 한 번에 계산할 수 있습니다.. 
+**Note** 단일 행렬을 사용하여 `queries, kesys 및 values`을 한 번에 계산할 수 있다. 
 
 
 ```python
@@ -379,7 +377,7 @@ MultiHeadAttention()(patches_embedded).shape
 
 ### Residuals
 
-변압기 블록에 잔차 연결부가 있음
+Transformer 블록에 잔차 연결부가 있음
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttentionRes.png?raw=true)
 
@@ -460,10 +458,6 @@ TransformerEncoderBlock()(patches_embedded).shape
 
     torch.Size([1, 197, 768])
 
-
-
-PyTorch에서 멀티 헤드 어텐션을 빌드할 수도 있지만 쿼리, 키 및 값의 3가지 입력이 필요. 그것을 하위 분류하고 동일한 입력을 전달할 수 있음.
-
 ### Transformer
 
 ViT에서는 원래 Transformer의 인코더 부분만 사용.
@@ -478,7 +472,7 @@ class TransformerEncoder(nn.Sequential):
 
 ## Head
 
-마지막 계층은 클래스 확률을 제공하는 일반 완전 연결임. 먼저 전체 시퀀스에 대해 기본 평균을 수행 함.
+마지막 계층은 클래스 확률을 제공하는 General fully connected임. 먼저 전체 시퀀스에 대해 기본 평균을 수행 함.
 
 
 ```python

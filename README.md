@@ -71,17 +71,6 @@ x = x.unsqueeze(0) # add batch dim
 print('after unsqueeze(0) :',x.shape)
 ```
 
-
-```python
-# resize to imagenet size 
-transform = Compose([Resize((224, 224)), ToTensor()])
-x = transform(img)
-x = x.unsqueeze(0) # add batch dim
-x.shape
-```
-
-
-
     image.size : torch.Size([3, 224, 224])
     after unsqueeze(0) : torch.Size([1, 3, 224, 224])
 
@@ -106,7 +95,7 @@ patch_size = 16 # 16 pixels
 pathes = rearrange(x, 'b c (h s1) (w s2) -> b (h w) (s1 s2 c)', s1=patch_size, s2=patch_size)
 ```
 
-이제 일반 선형 레이어를 사용하여 투영해야 합니다.
+이제 일반 선형 레이어를 사용하여 투영해야 한다.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/PatchesProjected.png?raw=true)
 
@@ -166,6 +155,7 @@ PatchEmbedding()(x).shape
 
 다음 단계는 `cls 토큰`과 위치 임베딩을 추가하는 것입니다. `cls 토큰`은 **각** 시퀀스(프로젝션된 패치)에서 삽입된 숫자일 뿐.
 
+> **참고** Vision Transformer의 흥미로운 점 중 하나는 아키텍처가 클래스 토큰을 사용한다는 것입니다. 이러한 클래스 토큰은 입력 시퀀스의 시작 부분에 추가되는 무작위로 초기화된 토큰입니다. 이 클래스 토큰의 이유는 무엇이며 어떤 역할을 합니까? **Class Token은 무작위로 초기화되므로 자체적으로 유용한 정보가 포함되어 있지 않습니다.** 그러나 Class Token은 Transformer가 더 깊고 더 많은 계층의 시퀀스에서 다른 토큰의 정보를 축적할 수 있습니다. Vision Transformer가 최종적으로 시퀀스의 최종 분류를 수행할 때 MLP 헤드를 사용하여 마지막 계층의 클래스 토큰 데이터만 보고 다른 정보는 보지 않습니다. **이 작업은 클래스 토큰이 시퀀스의 다른 토큰에서 추출된 정보를 저장하는 데 사용되는 자리 표시자 데이터 구조임을 시사합니다.** 이 절차에 빈 토큰을 할당하면 Vision Transformer가 다른 개별 토큰 중 하나에 대해 최종 출력을 편향시킬 가능성이 낮아집니다. [링크](https://deepganteam.medium.com/vision-transformers-for-computer-vision-9f70418fe41a)
 
 ```python
 class PatchEmbedding(nn.Module):
@@ -202,7 +192,7 @@ PatchEmbedding()(x).shape
 
 ### Position Embedding
 
-지금까지 모델은 패치의 원래 위치에 대해 알지 못했습니다. 이 공간 정보를 전달해야 합니다. 이것은 다양한 방법으로 수행할 수 있습니다. ViT에서는 모델이 학습하도록 합니다. 위치 임베딩은 투영된 패치에 추가되는 N_PATCHES + 1(토큰), EMBED_SIZE 모양의 텐서일 뿐.
+**지금까지 모델은 패치의 원래 위치에 대해 알지 못했습니다. 이 공간 정보를 전달해야 합니다. 이것은 다양한 방법으로 수행할 수 있습니다. ViT에서는 모델이 학습하도록 합니다.** 위치 임베딩은 투영된 패치에 추가되는 N_PATCHES + 1(토큰), EMBED_SIZE 모양의 텐서일 뿐.
 
 
 ```python
@@ -250,7 +240,7 @@ Let's start with the Attention part
 
 ### Attention
 
-따라서 Attention은 쿼리, 키 및 값의 세 가지 입력을 취하고 쿼리와 값을 사용하여 Attention 매트릭스를 계산. Value에 "attend"하는 데 사용. 이 경우, 우리는 계산이 더 작은 입력 크기를 가진 n개의 헤드로 분할된다는 것을 의미하는 다중 헤드 attention을 사용하고 있다.
+따라서 Attention은 Query, Key 및 Value의 세 가지 입력을 취하고 Query와 Value을 사용하여 Attention 매트릭스를 계산. Value에 "attend"하는 데 사용한다. 이 경우, 우리는 더 작은 입력 크기를 가진 n개의 헤드로 분할된다는 것을 의미하는 다중 헤드 attention을 사용하고 있다.
 
 ![alt](https://github.com/FrancescoSaverioZuppichini/ViT/blob/main/images/TransformerBlockAttention.png?raw=true)
 

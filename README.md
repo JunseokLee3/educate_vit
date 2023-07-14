@@ -3,8 +3,11 @@
 paper : [AN IMAGE IS WORTH 16X16 WORDS:
 TRANSFORMERS FOR IMAGE RECOGNITION AT SCALE](https://arxiv.org/pdf/2010.11929.pdf).
 
-
 **코드 참조 및 글 참조[here](https://github.com/FrancescoSaverioZuppichini/ViT)**
+
+이 글은 위에 있는 코드를 참조하여 한글로 변경 했습니다.
+대학원 세미나 및 워크숍을 위해 한글로 변경 했습니다.
+
 
 이 코드 vision transformerd을 공부하기 위한 코드이며, 최적화 되어 있지 않음.
 
